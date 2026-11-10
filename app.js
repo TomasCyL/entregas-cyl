@@ -2841,7 +2841,7 @@ async function bkImport(file){
   if(S.mode==='db'){toast('Subiendo respaldo a SharePoint…');await Store.saveCfg();await Store.savePos();for(const k of Object.keys(S.plans))await Store.write('plan/'+segSafe(k),S.plans[k]);for(const [id,m] of Object.entries(S.meets))await Store.write('meet/'+id,m);for(const [id,p] of Object.entries(S.prod))await Store.write('prod/'+id,p);for(const kind of ['oc','rec','pal','mae'])if(S[kind].length)await Store.saveSource(kind,S[kind],S.meta[kind+'Info']||{at:nowISO(),file:'Respaldo',rows:S[kind].length});}else Store.saveLocal();
   rebuild();render();toast('Respaldo restaurado.');
 }
-if(!IS_EXT&&'serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>{navigator.serviceWorker.register('pwa-sw.js').catch(e=>console.warn('sw',e));});}
+if(!IS_EXT&&'serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('pwa-sw.js').catch(e=>console.warn('sw',e));}
 /* =========================================================
    Arranque
    ========================================================= */
