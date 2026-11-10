@@ -1,0 +1,17 @@
+{
+  "name": "Gestión y Monitoreo de Entregas · C&L Fruit",
+  "short_name": "Entregas C&L",
+  "description": "OTIF de proveedores de materiales de embalaje de C&L Fruit",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FAF6F1",
+  "theme_color": "#500015",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

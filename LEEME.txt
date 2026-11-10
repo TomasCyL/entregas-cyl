@@ -1,0 +1,31 @@
+Gestión y Monitoreo de Entregas · C&L Fruit · v2.0.0 (extensión de Chrome)
+
+INSTALAR (cada persona de Abastecimiento)
+1. Copiar la carpeta entregas-cyl a su PC (o usarla desde la carpeta sincronizada de OneDrive).
+2. Chrome → chrome://extensions → activar "Modo de desarrollador" → "Cargar descomprimida" → elegir la carpeta.
+3. Tener iniciada la sesión de Microsoft 365 en Chrome (cylfruit.sharepoint.com). El ícono de la extensión abre la herramienta.
+Para actualizar: reemplazar los archivos y pulsar "Actualizar" en chrome://extensions.
+
+DATOS EN LÍNEA
+Todo (calendario, compromisos, historial, actas, maestro, configuración y los Excel cargados) se guarda en listas EN_* del sitio
+SharePoint EXPORTADORACYL, con la sesión de cada usuario. Las listas se crean solas la primera vez. Quien no tenga permiso de
+edición en el sitio verá la herramienta en solo lectura. Los datos se refrescan solos cada 2 minutos (o con "Actualizar datos" en Configuración → Conexión).
+Si aparece "Sin conexión con SharePoint": iniciar sesión en la pestaña de SharePoint que se abre y pulsar Reconectar.
+
+CARGA MANUAL (por ahora)
+Configuración → Datos y configuración: cargar Excel/CSV de
+  - Órdenes de compra (OC, código, producto, proveedor, categoría, cantidad, estado, almacén, fecha)
+  - Recepciones (OC, código, almacén, fecha, cantidad)
+  - Unidades por pallet y Especie/formato (opcionales)
+Primero definir las plantas y sus códigos de almacén. El maestro de productos solo muestra códigos que tengan OC cargadas.
+Lo que carga una persona lo ven todas.
+
+ARCHIVOS
+index.html + app.js (la app), sp.js (listas de SharePoint), lib/ (xlsx y pdf-lib), sw.js, manifest.json, icons/.
+
+VERSIÓN 3 — TAMBIÉN APP WEB / CELULAR (PWA)
+La misma carpeta sirve como extensión de Chrome y como app web publicada en https://tomascyl.github.io/entregas-cyl/.
+En la web se entra con la cuenta Microsoft de C&L (app "Entregas CyL" en Entra ID) y los datos se leen/escriben por Microsoft Graph
+sobre las mismas listas EN_* de EXPORTADORACYL. En el celular: abrir el enlace → menú del navegador → "Agregar a pantalla de inicio".
+Publicación: subir el contenido de esta carpeta a la raíz del repositorio GitHub TomasCyL/entregas-cyl (rama main) y en
+Settings → Pages elegir "Deploy from a branch", rama main, carpeta /(root).
