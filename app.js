@@ -68,8 +68,9 @@ const S={
    Índices derivados
    ========================================================= */
 function lineState(s){const n=norm(s);if(!n)return 'Abierta';if(n.includes('CANCEL'))return 'Cancelada';if(n.includes('RECIB')||n.includes('FACTUR')||n.includes('CERRAD')||n.includes('INVOICED')||n.includes('RECEIVED'))return 'Recibida/Facturada';return 'Abierta';}
+const defPlant=()=>S.cfg.plants.length===1?S.cfg.plants[0].name:'';
 function plantOf(v){
-  if(v==null||v==='')return '';
+  if(v==null||v==='')return defPlant();
   const s=String(v).trim(), n=norm(s);
   for(const p of S.cfg.plants){if(norm(p.name)===n)return p.name;if((p.alm||[]).some(a=>norm(a)===n))return p.name;}
   return s;
@@ -92,7 +93,7 @@ function rebuild(){
     ix.recLine.get(k).push({...r,pl});
     ix.recTot[k]=(ix.recTot[k]||0)+(+r.qty||0);
   }
-  for(const p of Object.values(S.plans))for(const c of p.commits||[])if(c.pl)ix.plants.add(c.pl);
+  for(const p of Object.values(S.plans))for(const c of p.commits||[]){if(!c.pl||c.pl==='Sin planta'){const d=defPlant();if(d)c.pl=d;}if(c.pl)ix.plants.add(c.pl);}
   ix.plants.delete('');
   S.ix=ix;
 }
@@ -804,10 +805,10 @@ function agPlanilla(){
   const one=groups.size===1;
   const th=`<tr><th class="pl-c1">Producto</th><th class="pl-c3 num">Adjudicado</th><th class="pl-c6 num">Recibido</th><th class="pl-c5 num">Por calendarizar</th><th class="pl-c4 num">Calendarizado por planta <span style="font-weight:500">(por llegar)</span></th><th class="pl-c2">Planta</th>${weeks.map(w=>`<th class="wk ${w===CUR?'cur':''}">${wLabel(w)}<span class="dts">${wDates(w)}</span></th>`).join('')}</tr>`;
   const ini=pl=>esc(String(pl).slice(0,3));
-  const basePls=S.cfg.plants.filter(x=>+x.cap>0).map(x=>x.name).filter(plMatch);
+  const basePls=(S.cfg.plants.some(x=>+x.cap>0)?S.cfg.plants.filter(x=>+x.cap>0):S.cfg.plants).map(x=>x.name).filter(plMatch);
   const row=l=>{const p=planOf(l.k);const act=activeCommits(p);const pend=pendOf(l);
     const recPls=(S.ix.recLine.get(l.k)||[]).filter(r=>+r.qty>0).map(r=>r.pl);
-    const pls=[...new Set([...basePls,...act.map(c=>c.pl),...recPls])].filter(plMatch);if(!pls.length)pls.push(plantOf(l.alm)||l.alm||'Sin planta');
+    const pls=[...new Set([...basePls,...act.map(c=>c.pl),...recPls])].filter(plMatch);if(!pls.length)pls.push(plantOf(l.alm)||l.alm||defPlant()||'Sin planta');
     const n=pls.length;const brd=!p.confirmed&&act.length&&l.st==='Abierta';
     const llegPl=pl=>sum(act.filter(c=>c.pl===pl&&c.wk>=CUR),c=>Math.max(0,c.plan-(c.wk===CUR?recAt(l.k,pl,CUR):0)));
     const rec=recTot(l.k),lleg=sum(pls,llegPl),canc=+p.cancel||0;const diff=(l.st==='Abierta'?l.qty-canc-rec-lleg-pend:0);
@@ -823,13 +824,15 @@ function agPlanilla(){
       const adj=ix===0?`<td class="pl-c3 pl-tot" rowspan="${n}"><span class="pl-tl">Total</span>${fmt(l.qty)}</td><td class="pl-c6 pl-tot" rowspan="${n}"><span class="pl-tl">Total</span>${fmt(rec)}<span class="pl-pct">${l.qty?pct(rec/l.qty):'–'}</span></td>`:'';
       const pc=ix===0?`<td class="pl-c5 pl-tot" rowspan="${n}"><span class="pl-tl">Total</span>${pend>0?`<b style="color:var(--bad)">${fmt(pend)}</b>`:'<span class="muted">0</span>'}</td>`:'';
       return `<tr ${ix===0?`id="pl-${segSafe(l.k)}"`:''} class="${S.agFocus===l.k?'pl-focus':''} ${ix===0?'pl-first':''}">${first}${adj}${pc}<td class="pl-c4 num">${calPl?`${fmt(calPl)} <span class="pl-ll" title="Por llegar desde ${wLabel(CUR)}">(${fmt(lleg)})</span>`:'<span class="muted">–</span>'}</td><td class="pl-c2">${esc(pl)}</td>${cells}</tr>`;}).join('');};
-  const body=[...groups.entries()].map(([prov,a])=>`<tbody>${`<tr class="pl-g"><td class="pl-c1" colspan="6"><b>${esc(prov)}</b> <span class="muted" style="font-size:12px">${a.length} línea${a.length>1?'s':''} · por calendarizar ${fmt(sum(a,pendOf))}</span></td><td colspan="${weeks.length}"></td></tr>`}${a.map(row).join('')}</tbody>`).join('');
+  S.agCol=S.agCol||lsGet('otif.agCol',{});const allCol=groups.size>1&&[...groups.keys()].every(g=>S.agCol[g]);
+  const body=[...groups.entries()].map(([prov,a])=>{const col=!!S.agCol[prov];return `<tbody>${`<tr class="pl-g ${col?'pl-col':''}"><td class="pl-c1" colspan="6"><button class="pl-tg" data-a="agCol" data-g="${esc(prov)}" aria-expanded="${!col}" title="${col?'Expandir':'Colapsar'}">${col?'▸':'▾'}</button><b>${esc(prov)}</b> <span class="muted" style="font-size:12px">${a.length} línea${a.length>1?'s':''} · por calendarizar ${fmt(sum(a,pendOf))}${col?` · calendarizado ${fmt(sum(a,l=>planSum(planOf(l.k))))}`:''}</span></td><td colspan="${weeks.length}"></td></tr>`}${col?'':a.map(row).join('')}</tbody>`;}).join('');
+  const colCtl=groups.size>1?`<div class="row" style="margin-bottom:6px;gap:8px"><button class="btn ghost sm" data-a="agColAll" data-v="${allCol?'0':'1'}">${allCol?'Expandir todos':'Colapsar todos'}</button></div>`:'';
   const tot=`<tfoot><tr class="pl-t"><td class="pl-c1"><b>Total</b></td><td class="pl-c3 num"><b>${fmt(sum(ls,l=>l.qty))}</b></td><td class="pl-c6 num"><b>${fmt(sum(ls,l=>recTot(l.k)))}</b></td><td class="pl-c5 num"><b>${fmt(sum(ls,pendOf))}</b></td><td class="pl-c4 num"><b>${fmt(sum(ls,l=>planSum(planOf(l.k))))}</b> <span class="pl-ll">(${fmt(sum(ls,l=>sum(activeCommits(planOf(l.k)).filter(c=>c.wk>=CUR&&plMatch(c.pl)),c=>Math.max(0,c.plan-(c.wk===CUR?recAt(l.k,c.pl,CUR):0)))))})</span></td><td class="pl-c2"></td>${weeks.map(w=>{const q=sum(ls,l=>sum(activeCommits(planOf(l.k)).filter(c=>c.wk===w),c=>c.plan));return `<td class="num ${w===CUR?'pl-cur':''}"><b>${q?fmt(q):''}</b></td>`;}).join('')}</tr></tfoot>`;
   postFns.push(()=>{const sc=document.getElementById('plan-scroll');if(!sc)return;
     if(S.agFocus){const r=document.getElementById('pl-'+segSafe(S.agFocus));if(r){r.scrollIntoView({block:'center'});}}
     if(S._plSL!=null)sc.scrollLeft=S._plSL;else sc.scrollLeft=0;
     sc.onscroll=()=>{S._plSL=sc.scrollLeft;};});
-  return `<div class="tw pl-wrap" id="plan-scroll"><table class="ag plan">${`<thead>${th}</thead>`}${body}${tot}</table></div>
+  return `${colCtl}<div class="tw pl-wrap" id="plan-scroll"><table class="ag plan">${`<thead>${th}</thead>`}${body}${tot}</table></div>
    <p class="hint" style="margin:8px 0 0">Calendario desde la semana actual (destacada) en adelante. Cuadratura de cada producto: Adjudicado = Recibido + Por llegar (entre paréntesis) + Por calendarizar; si no se cumple aparece ⚠ Gestión pendiente con lo que falta o sobra. Toca una celda con cantidad para modificar esa entrega, o <b>+</b> para agendar una nueva. Lo ya ocurrido y su cumplimiento se revisan en Proveedores → Seguimiento OTIF.</p>`;
 }
 function vAgenda(){
@@ -2711,6 +2714,8 @@ document.addEventListener('click',async ev=>{
     case 'mailGen':if(!S.rProv){const pl=provList();S.rProv=pl[0]&&pl[0].prov;}openDrawer({type:'mail',which:'gen'});break;
     case 'scrollSug':{S.view='hoy';render();const el=document.getElementById('gestiones');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.style.outline='2px solid var(--accent)';setTimeout(()=>el.style.outline='',1600);}break;}
     case 'bulkOpen':openDrawer({type:'bulk',res:null,conf:false});break;
+    case 'agCol':S.agCol=S.agCol||{};S.agCol[t.dataset.g]=!S.agCol[t.dataset.g];lsSet('otif.agCol',S.agCol);render();break;
+    case 'agColAll':{const v=t.dataset.v==='1';S.agCol={};if(v)for(const l of fLines())S.agCol[l.prov]=true;lsSet('otif.agCol',S.agCol);render();break;}
     case 'bulkTpl':bulkTemplate();break;
     case 'bulkSave':{D.err='';const r=bulkSave();closeDrawer();toast(`${r.n} compromiso(s) agendados en ${r.lines} línea(s)${r.conf?` · ${r.conf} calendario(s) confirmados`:''}.${r.errs.length?' '+r.errs.length+' línea(s) con error: '+r.errs[0]:''}`);render();break;}
     case 'adelOpt':S.tab.ao=S.tab.ao||{};S.tab.ao[t.dataset.id]=t.dataset.v;drawRender();break;

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Gestión y Monitoreo de Entregas C&L",
   "short_name": "Entregas C&L",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "OTIF de proveedores de materiales de embalaje: calendario de entregas, cumplimiento, reuniones semanales y ocupación de bodegas. C&L Fruit.",
   "icons": {
     "16": "icons/16.png",
